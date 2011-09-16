@@ -1,0 +1,15 @@
+# Python distutils output directories
+build
+dist
+
+# Temporary vim files
+*~
+
+# Temporary emacs files
+.#*
+
+# Python compiled bytecode
+*.pyc
+
+# Notepad++ session file (who cares what I have open in my text editor?)
+nppsess
