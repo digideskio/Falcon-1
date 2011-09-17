@@ -1,4 +1,5 @@
 import os
+import bisect
 
 DEFAULT_NUM_FLIGHTS = 10
 
@@ -6,17 +7,17 @@ DEFAULT_NUM_FLIGHTS = 10
 all_flights = []
 
 def get_flights(first=DEFAULT_NUM_FLIGHTS, after=None):
-    return all_flights[-first:] # TODO: implement after
+    return reversed(all_flights[-first:]) # TODO: implement after
 
 def get_flight(n):
-    return all_flights[-n]
+    return all_flights[-(n + 1)]
 
 def add_flight(flight):
-    all_flights.append(Flight(flight)) # TODO: sort?
+    bisect.insort(all_flights, Flight(flight))
 
 class Flight:
     def __init__(self, *args, **kwargs):
-        arg_names = ('departs', 'dept_time', 'arrives', 'arr_time')
+        arg_names = ('date', 'departs', 'dept_time', 'arrives', 'arr_time')
         if len(args) == 1:
             self._init_str(args[0])
         elif 'str' in kwargs:
@@ -28,10 +29,12 @@ class Flight:
             self._init_arr_dept(**kwargs)
         else:
             raise TypeError('Flight constructor takes either a string or ' +
-                            'the arguments (departs, dept_time, arrives, arr_time)')
+                            'the arguments (date, departs, dept_time, ' +
+                            'arrives, arr_time)')
 
     def _init_str(self, str):
         (
+            self.date,
             self.departs, 
             self.dept_time, 
             self.arrives, 
@@ -45,7 +48,17 @@ class Flight:
         self.arr_time = arr_time
     
     def __str__(self):
-        return '%s %s %s %s' % (self.departs, self.dept_time, self.arrives, self.arr_time)
+        return '%s %s %s %s %s' % (
+            self.date,
+            self.departs, 
+            self.dept_time, 
+            self.arrives, 
+            self.arr_time
+        )
+    
+    def __repr__(self):
+        return "Flight('%s')" % str(self) 
     
     def __cmp__(self, other):
-        return cmp(self.dept_time, other.dept_time)
+        return cmp(self.date, other.date) or \
+               cmp(self.dept_time, other.dept_time)
