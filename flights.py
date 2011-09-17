@@ -48,5 +48,15 @@ class AddPanel(wx.TextCtrl): # TODO: change to true panel
         self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter)
     
     def OnEnter(self, e):
-        files.add_flight(self.GetValue())
-        self.GetParent().FlightsList.Refresh()
+        try:
+            files.add_flight(self.GetValue())
+        except ValueError, e:
+            self.ErrorMessageBox(e.message)
+        else:
+            self.GetParent().FlightsList.Refresh()
+
+    def ErrorMessageBox(self, message):
+        dialog = wx.MessageDialog(self, message, 'Error adding flight',
+                                  wx.OK | wx.ICON_ERROR)
+        dialog.ShowModal()
+        dialog.Destroy()
