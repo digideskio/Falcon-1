@@ -39,7 +39,8 @@ class FlightsList(wx.HtmlListBox):
         return '<font color="green">' + str(flight) + '</font>' # TODO: expand
 
     def Refresh(self):
-        self.SetItemCount(len(files.get_flights(first=FlightsList.INITIAL_LENGTH)))
+        self.SetItemCount(files.get_num_flights(first=
+                                                FlightsList.INITIAL_LENGTH))
         self.RefreshAll()
 
 class AddPanel(wx.TextCtrl): # TODO: change to true panel
