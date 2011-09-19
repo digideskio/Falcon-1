@@ -1,5 +1,5 @@
 import wx
-import files
+import flight
 
 class FlightsPanel(wx.Panel):
 	def __init__(self, *args, **kwargs):
@@ -33,13 +33,13 @@ class FlightsList(wx.HtmlListBox):
         self.Refresh()
         
     def OnGetItem(self, n):
-        return self.Format(files.get_flight(n))
+        return self.Format(flight.get_flight(n))
         
     def Format(self, flight):
         return '<font color="green">' + str(flight) + '</font>' # TODO: expand
 
     def Refresh(self):
-        self.SetItemCount(files.get_num_flights(first=
+        self.SetItemCount(flight.get_num_flights(first=
                                                 FlightsList.INITIAL_LENGTH))
         self.RefreshAll()
 
@@ -50,7 +50,7 @@ class AddPanel(wx.TextCtrl): # TODO: change to true panel
     
     def OnEnter(self, e):
         try:
-            files.add_flight(self.GetValue())
+            flight.add_flight(self.GetValue())
         except ValueError, e:
             self.ErrorMessageBox(e.message)
         else:

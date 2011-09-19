@@ -2,7 +2,7 @@
 
 import wx
 
-import flights
+import list
 
 class MainMenu(wx.MenuBar):
 	def __init__(self, *args, **kwargs):
@@ -21,7 +21,7 @@ class MainWindow(wx.Frame):
 		self.Menu = MainMenu()
 		self.SetMenuBar(self.Menu)
 		
-		self.Panel = flights.FlightsPanel(parent=self, id=wx.ID_ANY)
+		self.Panel = list.FlightsPanel(parent=self, id=wx.ID_ANY)
 		
 		self.SmallIcon = wx.Icon('falcon.ico', wx.BITMAP_TYPE_ICO,
 				16, 16) # TODO
