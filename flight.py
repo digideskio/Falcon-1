@@ -1,6 +1,7 @@
 import os
 import bisect
 import re
+import datetime
 
 DEFAULT_NUM_FLIGHTS = 10
 
@@ -15,6 +16,30 @@ def get_flight(n):
 
 def add_flight(flight):
     bisect.insort(all_flights, Flight(flight))
+
+def string_to_datetime(string, context=datetime.datetime.now()):
+    components = string.split(' ')
+    date = None
+    time_str = None
+    if len(components) == 1:
+        date = context.date()
+        time_str = components[0]
+    elif len(components) == 2:
+        time_str = components[1]
+        if components[0].count('/') == 1:
+            date = datetime.datetime.strptime(components[0], '%m/%d').\
+                                     replace(year=context.year).date()
+        elif components[0].count('/') == 2:
+            date = datetime.datetime.strptime(components[0], '%m/%d/%Y').\
+                                     date()
+
+    time = None
+    if ':' in time_str:
+        time = datetime.datetime.strptime(time_str, '%H:%M').time()
+    else:
+        time = datetime.datetime.strptime(time_str, '%H%M').time()
+
+    return datetime.datetime.combine(date, time)
 
 class Flight:
     def __init__(self, *args, **kwargs):
@@ -80,16 +105,32 @@ class Flight:
 
     def _init_dept_arr(self, departs, dept_time, arrives, arr_time):
         self.departs = departs
-        self.dept_time = dept_time
         self.arrives = arrives
-        self.arr_time = arr_time
+
+        if isinstance(dept_time, basestring):
+            if all_flights:
+                self.dept_time = string_to_datetime(dept_time, context=
+                                                    all_flights[-1].arr_time)
+            else:
+                self.dept_time = string_to_datetime(dept_time)
+        else:
+            self.dept_time = dept_time
+
+        if isinstance(arr_time, basestring):
+            self.arr_time = string_to_datetime(arr_time,
+                                               context=self.dept_time)
+        elif isinstance(arr_time, datetime.time):
+            self.arr_time = datetime.datetime.combine(self.dept_time.date,
+                                                      arr_time)
+        else:
+            self.arr_time = arr_time
     
     def __str__(self):
         return '%s&ndash;%s departs <b>%s</b> arrives <b>%s</b>' % (
             self.departs,
             self.arrives,
-            self.dept_time,
-            self.arr_time,
+            self.dept_time.strftime('%x %X'),
+            self.arr_time.strftime('%x %X'),
         )
     
     def __repr__(self):
