@@ -36,7 +36,7 @@ class FlightsList(wx.HtmlListBox):
         return self.Format(flight.get_flight(n))
         
     def Format(self, flight):
-        return '<font color="green">' + str(flight) + '</font>' # TODO: expand
+        return str(flight)
 
     def Refresh(self):
         self.SetItemCount(flight.get_num_flights(first=

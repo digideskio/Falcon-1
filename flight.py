@@ -5,14 +5,28 @@ import datetime
 
 import airport
 
-DEFAULT_NUM_FLIGHTS = 10
-
 # TODO: use files
 all_flights = []
 
-def get_num_flights(first=DEFAULT_NUM_FLIGHTS, after=None):
-    return len(all_flights[-first:]) # TODO: implement after
+def get_num_flights(first=None, before=None, after=None):
+    return len(get_flights(first, after)) # TODO: make more efficient
 
+def get_flights(first=None, before=None, after=None):
+    # TODO: make WAY more efficient
+    result = None
+    if first is None:
+        result = all_flights[:]
+    else:
+        result = all_flights[-first:]
+
+    if after is not None:
+        result = filter(lambda f: f.arr_time >= after, result)
+
+    if before is not None:
+        result = filter(lambda f: f.dept_time <= before, result)
+
+    return result
+        
 def get_flight(n):
     return all_flights[-(n + 1)]
 
@@ -140,14 +154,41 @@ class Flight:
             self.arr_time = arr_time
     
     def __str__(self):
-        return ('%s&ndash;%s departs <b>%s</b> arrives <b>%s</b> ' +
+        lines = [('%s&ndash;%s departs <b>%s</b> arrives <b>%s</b> ' +
                '<i>[%s]</i>') % (
             self.departs,
             self.arrives,
             self.dept_time.strftime('%x %H%M (%Z)'),
             self.arr_time.strftime('%x %H%M (%Z)'),
-            self.arr_time - self.dept_time,
-        )
+            self.length(),
+        )]
+
+        legal, status = self.legality()
+
+        for status_line in status:
+            lines.append('&nbsp;&nbsp;&nbsp;<small>' + status_line +
+                         '</small>')
+
+        font_color = {True: 'green', False: 'red'}[legal]
+        return '<font color="' + font_color + '">' + \
+               '<br />'.join(lines) + '</font>'
+
+    def legality(self):
+        import legality
+
+        legal = True
+        status = []
+
+        for requirement in legality.requirements:
+            req_legal, req_status = requirement(self)
+            if not req_legal:
+                legal = False
+                status.append(req_status)
+
+        return legal, status
+
+    def length(self):
+        return self.arr_time - self.dept_time
     
     def __repr__(self):
         return "Flight('%s')" % str(self) 
