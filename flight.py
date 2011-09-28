@@ -3,8 +3,6 @@ import bisect
 import re
 import datetime
 
-import pytz
-
 import airport
 
 DEFAULT_NUM_FLIGHTS = 10
@@ -23,6 +21,8 @@ def add_flight(flight):
 
 def string_to_datetime(string, context=datetime.datetime.now(),
                        airport_id=None):
+    from pytz import utc
+
     components = string.split(' ')
     date = None
     time_str = None
