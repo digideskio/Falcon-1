@@ -140,11 +140,13 @@ class Flight:
             self.arr_time = arr_time
     
     def __str__(self):
-        return '%s&ndash;%s departs <b>%s</b> arrives <b>%s</b>' % (
+        return ('%s&ndash;%s departs <b>%s</b> arrives <b>%s</b> ' +
+               '<i>[%s]</i>') % (
             self.departs,
             self.arrives,
-            self.dept_time.strftime('%x %X %Z'),
-            self.arr_time.strftime('%x %X %Z'),
+            self.dept_time.strftime('%x %H%M (%Z)'),
+            self.arr_time.strftime('%x %H%M (%Z)'),
+            self.arr_time - self.dept_time,
         )
     
     def __repr__(self):
