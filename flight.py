@@ -3,6 +3,10 @@ import bisect
 import re
 import datetime
 
+import pytz
+
+import airport
+
 DEFAULT_NUM_FLIGHTS = 10
 
 # TODO: use files
@@ -17,7 +21,8 @@ def get_flight(n):
 def add_flight(flight):
     bisect.insort(all_flights, Flight(flight))
 
-def string_to_datetime(string, context=datetime.datetime.now()):
+def string_to_datetime(string, context=datetime.datetime.now(),
+                       airport_id=None):
     components = string.split(' ')
     date = None
     time_str = None
@@ -39,7 +44,12 @@ def string_to_datetime(string, context=datetime.datetime.now()):
     else:
         time = datetime.datetime.strptime(time_str, '%H%M').time()
 
-    return datetime.datetime.combine(date, time)
+    result = datetime.datetime.combine(date, time)
+
+    if airport_id and airport_id in airport.all_airports:
+        return airport.all_airports[airport_id].timezone.localize(result)
+    else:
+        return pytz.utc.localize(result)
 
 class Flight:
     def __init__(self, *args, **kwargs):
@@ -48,7 +58,7 @@ class Flight:
             self._init_str(args[0])
         elif 'str' in kwargs:
             self._init_str(kwargs['str'])
-        elif len(args) == 4:
+        elif len(args) == len(arg_names):
             self._init_arr_dept(*args)
         elif reduce(lambda x, y: x and y, 
                     [(name in kwargs) for name in arg_names]):
@@ -110,18 +120,22 @@ class Flight:
         if isinstance(dept_time, basestring):
             if all_flights:
                 self.dept_time = string_to_datetime(dept_time, context=
-                                                    all_flights[-1].arr_time)
+                                                    all_flights[-1].arr_time,
+                                                    airport_id=departs)
             else:
-                self.dept_time = string_to_datetime(dept_time)
+                self.dept_time = string_to_datetime(dept_time,
+                                                    airport_id=departs)
         else:
             self.dept_time = dept_time
 
         if isinstance(arr_time, basestring):
             self.arr_time = string_to_datetime(arr_time,
-                                               context=self.dept_time)
+                                               context=self.dept_time,
+                                               airport_id=arrives)
         elif isinstance(arr_time, datetime.time):
             self.arr_time = datetime.datetime.combine(self.dept_time.date,
-                                                      arr_time)
+                                                      arr_time,
+                                                      airport_id=arrives)
         else:
             self.arr_time = arr_time
     
@@ -129,8 +143,8 @@ class Flight:
         return '%s&ndash;%s departs <b>%s</b> arrives <b>%s</b>' % (
             self.departs,
             self.arrives,
-            self.dept_time.strftime('%x %X'),
-            self.arr_time.strftime('%x %X'),
+            self.dept_time.strftime('%x %X %Z'),
+            self.arr_time.strftime('%x %X %Z'),
         )
     
     def __repr__(self):
