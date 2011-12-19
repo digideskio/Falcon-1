@@ -1,37 +1,8 @@
 import os
-import bisect
 import re
 import datetime
 
 import airport
-
-# TODO: use files
-all_flights = []
-
-def get_num_flights(first=None, before=None, after=None):
-    return len(get_flights(first, after)) # TODO: make more efficient
-
-def get_flights(first=None, before=None, after=None):
-    # TODO: make WAY more efficient
-    result = None
-    if first is None:
-        result = all_flights[:]
-    else:
-        result = all_flights[-first:]
-
-    if after is not None:
-        result = filter(lambda f: f.arr_time >= after, result)
-
-    if before is not None:
-        result = filter(lambda f: f.dept_time <= before, result)
-
-    return result
-        
-def get_flight(n):
-    return all_flights[-(n + 1)]
-
-def add_flight(flight):
-    bisect.insort(all_flights, Flight(flight))
 
 def string_to_datetime(string, context=datetime.datetime.now(),
                        airport_id=None):
@@ -68,21 +39,22 @@ def string_to_datetime(string, context=datetime.datetime.now(),
 class Flight:
     def __init__(self, *args, **kwargs):
         arg_names = ('departs', 'dept_time', 'arrives', 'arr_time')
-        if len(args) == 1:
-            self._init_str(args[0])
+        if len(args) in (1, 2):
+            self._init_str(*args)
         elif 'str' in kwargs:
-            self._init_str(kwargs['str'])
+            self._init_str(**kwargs)
         elif len(args) == len(arg_names):
             self._init_arr_dept(*args)
         elif reduce(lambda x, y: x and y, 
                     [(name in kwargs) for name in arg_names]):
             self._init_arr_dept(**kwargs)
         else:
-            raise TypeError('Flight constructor takes either a string or ' +
+            raise TypeError('Flight constructor takes either a string (and ' +
+                            'optionally a date/time context) or ' +
                             'the arguments (departs, dept_time, ' +
                             'arrives, arr_time)')
 
-    def _init_str(self, str):
+    def _init_str(self, str, context=datetime.datetime.now()):
         date = r'\d{1,2}/\d{1,2}(/\d{4})?'
         time = r'\d{1,2}:?\d{2}'
         airport_code = r'[A-Za-z]{3}'
@@ -108,13 +80,13 @@ class Flight:
         for format in formats:
             match = format.match(str)
             if match:
-                self._init_re(match)
+                self._init_re(match, context)
                 return
         
         raise ValueError('"%s" doesn\'t match any of the accepted formats.' %
                          str)
 
-    def _init_re(self, match):
+    def _init_re(self, match, context):
         departs = match.group('departs')
         arrives = match.group('arrives')
         dept_time = ' '.join((match.group('dept_date'),
@@ -125,20 +97,16 @@ class Flight:
         except IndexError:
             arr_time = ' '.join((match.group('dept_date'),
                                  match.group('arr_time'))) 
-        self._init_dept_arr(departs, dept_time, arrives, arr_time)
+        self._init_dept_arr(departs, dept_time, arrives, arr_time, context)
 
-    def _init_dept_arr(self, departs, dept_time, arrives, arr_time):
+    def _init_dept_arr(self, departs, dept_time, arrives, arr_time,
+            context=datetime.datetime.now()):
         self.departs = departs
         self.arrives = arrives
 
         if isinstance(dept_time, basestring):
-            if all_flights:
-                self.dept_time = string_to_datetime(dept_time, context=
-                                                    all_flights[-1].arr_time,
-                                                    airport_id=departs)
-            else:
-                self.dept_time = string_to_datetime(dept_time,
-                                                    airport_id=departs)
+            self.dept_time = string_to_datetime(dept_time, context,
+                                                airport_id=departs)
         else:
             self.dept_time = dept_time
 
@@ -153,7 +121,7 @@ class Flight:
         else:
             self.arr_time = arr_time
     
-    def __str__(self):
+    def report(self, schedule):
         lines = [('%s&ndash;%s departs <b>%s</b> arrives <b>%s</b> ' +
                '<i>[%s]</i>') % (
             self.departs,
@@ -163,7 +131,8 @@ class Flight:
             self.length(),
         )]
 
-        legal, status = self.legality()
+        import legality
+        legal, status = legality.check(self, schedule)
 
         for status_line in status:
             lines.append('&nbsp;&nbsp;&nbsp;<small>' + status_line +
@@ -173,25 +142,19 @@ class Flight:
         return '<font color="' + font_color + '">' + \
                '<br />'.join(lines) + '</font>'
 
-    def legality(self):
-        import legality
-
-        legal = True
-        status = []
-
-        for requirement in legality.requirements:
-            req_legal, req_status = requirement(self)
-            if not req_legal:
-                legal = False
-                status.append(req_status)
-
-        return legal, status
-
     def length(self):
         return self.arr_time - self.dept_time
     
     def __repr__(self):
         return "Flight('%s')" % str(self) 
+
+    def __str__(self):
+        return '%s %s %s %s' % (
+            self.departs,
+            self.dept_time.strftime('%x %H%M'),
+            self.arrives,
+            self.arr_time.strftime('%x %H%M'),
+        )
     
     def __cmp__(self, other):
         return cmp(self.dept_time, other.dept_time)

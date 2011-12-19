@@ -2,13 +2,13 @@ from datetime import timedelta
 
 import flight
 
-def thirty_in_seven(this):
+def thirty_in_seven(this, schedule):
     def total(ls):
         return reduce(lambda x, y: x + y, ls)
 
     seven_days = timedelta(days=7)
 
-    last_7_days = flight.get_flights(after=this.dept_time - seven_days,
+    last_7_days = schedule.get_range(after=this.dept_time - seven_days,
                                      before=this.arr_time)
     total_time = total([f.length() for f in last_7_days])
     return (
@@ -22,3 +22,16 @@ def thirty_in_seven(this):
 requirements = [
     thirty_in_seven,
 ]
+
+def check(this, schedule):
+    legal = True
+    status = []
+
+    for requirement in requirements:
+        req_legal, req_status = requirement(this, schedule)
+        if not req_legal:
+            legal = False
+            status.append(req_status)
+
+    return legal, status
+
