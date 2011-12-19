@@ -28,6 +28,9 @@ class FlightsPanel(wx.Panel):
     def AddFlight(self, entry):
         self.FlightsList.AddFlight(entry)
 
+    def FileCommand(self, id):
+        self.FlightsList.FileCommand(id)
+
 class FlightsList(wx.HtmlListBox):
     INITIAL_LENGTH = 100
 
@@ -49,6 +52,25 @@ class FlightsList(wx.HtmlListBox):
 
     def AddFlight(self, entry):
         self.schedule.add(entry)
+        self.Refresh()
+
+    def FileCommand(self, id):
+        # TODO:
+        # - wire these up to actual file dialogs
+        # - check if current schedule has been modified and prompt to save
+        if id == wx.ID_NEW:
+            self.schedule = schedule.Schedule()
+        elif id == wx.ID_OPEN:
+            self.schedule = schedule.Schedule('Open')
+        elif id == wx.ID_SAVE:
+            print 'Saved %s!' % self.schedule.filename
+        elif id == wx.ID_SAVEAS:
+            self.schedule.filename = 'Save As'
+            print 'Saved %s!' % self.schedule.filename
+        else:
+            print 'Unrecognized file command: %s' % str(id)
+            return
+
         self.Refresh()
 
 class AddPanel(wx.TextCtrl): # TODO: change to true panel

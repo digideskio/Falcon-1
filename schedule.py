@@ -4,6 +4,23 @@ import flight
 class Schedule:
     def __init__(self, *args, **kwargs):
         self.flights = []
+        if len(args) == 1:
+            self._init_file(args[0])
+        elif len(args) == 0:
+            if 'filename' in kwargs:
+                self._init_file(kwargs[filename])
+            elif kwargs:
+                raise TypeError('Schedule constructor got an unexpected ' \
+                        'keyword argument \'%s\'' % kwargs.keys()[0])
+            else:
+                self.filename = None
+        else:
+            raise TypeError('Schedule constructor takes 0 or 1 positional ' \
+                    'argument (%d given)' % len(args)) 
+
+    def _init_file(self, filename):
+        self.filename = filename
+        print 'Schedule initialized to %s' % filename
     
     def num_flights(self, first=None, before=None, after=None):
         return len(self.get_range(first, after)) # TODO: make more efficient
