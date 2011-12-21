@@ -1,4 +1,6 @@
+import os
 import wx
+
 import schedule
 
 class FlightsPanel(wx.Panel):
@@ -26,10 +28,22 @@ class FlightsPanel(wx.Panel):
         self.Layout()
     
     def AddFlight(self, entry):
-        self.FlightsList.AddFlight(entry)
+        try:
+            self.FlightsList.AddFlight(entry)
+        except ValueError, e:
+            self.ErrorMessageBox('Error adding flight', e.message)
 
     def FileCommand(self, id):
-        self.FlightsList.FileCommand(id)
+        try:
+            self.FlightsList.FileCommand(id)
+        except IOError, e:
+            self.ErrorMessageBox('File error', e.message)
+
+    def ErrorMessageBox(self, title, message):
+        dialog = wx.MessageDialog(self, message, title,
+                                  wx.OK | wx.ICON_ERROR)
+        dialog.ShowModal()
+        dialog.Destroy()
 
 class FlightsList(wx.HtmlListBox):
     INITIAL_LENGTH = 100
@@ -55,23 +69,67 @@ class FlightsList(wx.HtmlListBox):
         self.Refresh()
 
     def FileCommand(self, id):
-        # TODO:
-        # - wire these up to actual file dialogs
-        # - check if current schedule has been modified and prompt to save
-        if id == wx.ID_NEW:
-            self.schedule = schedule.Schedule()
-        elif id == wx.ID_OPEN:
-            self.schedule = schedule.Schedule('Open')
-        elif id == wx.ID_SAVE:
-            print 'Saved %s!' % self.schedule.filename
-        elif id == wx.ID_SAVEAS:
-            self.schedule.filename = 'Save As'
-            print 'Saved %s!' % self.schedule.filename
-        else:
-            print 'Unrecognized file command: %s' % str(id)
-            return
-
+        print 'FileCommand started'
+        try:
+            {
+                wx.ID_NEW: self.OnNew,
+                wx.ID_OPEN: self.OnOpen,
+                wx.ID_SAVE: self.OnSave,
+                wx.ID_SAVEAS: self.OnSaveAs,
+            }[id]()
+        except KeyError:
+            raise KeyError('Unrecognized file command: %s' % str(id))
+        
         self.Refresh()
+        print 'FileCommand exited'
+
+    def OnNew(self):
+        if self.PromptToSave() != wx.ID_CANCEL:
+            self.schedule = schedule.Schedule()
+
+    def OnOpen(self):
+        if self.PromptToSave() != wx.ID_CANCEL:
+            filename = self.PromptForFile(wx.FD_OPEN)
+            if filename is not None:
+                self.schedule = schedule.Schedule(filename)
+
+    def OnSave(self):
+        if self.schedule.filename is None:
+            self.OnSaveAs()
+        else:
+            self.schedule.save()
+
+    def OnSaveAs(self):
+        filename = self.PromptForFile(wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)    
+        if filename is not None:
+            self.schedule.save(filename)
+
+    def PromptForFile(self, mode):
+        wildcard = 'Itinerary text file (*.txt)|*.txt|' \
+                   'All files (*.*)|*.*'
+        dialog = wx.FileDialog(self, defaultDir=os.getcwd(),
+                               wildcard=wildcard,
+                               style=mode | wx.FD_CHANGE_DIR)
+        filename = None
+        if dialog.ShowModal() == wx.ID_OK:
+            filename = dialog.GetPath()
+        dialog.Destroy()
+        return filename
+
+    def PromptToSave(self):
+        result = wx.NO
+        if self.schedule.modified:
+            dialog = wx.MessageDialog(self,
+                    '"%s" has been modified.  ' \
+                    'Would you like to save it first?' %
+                    self.schedule.filename,
+                    'File has been changed',
+                    wx.YES_NO | wx.CANCEL)
+            result = dialog.ShowModal()
+            if result == wx.YES:
+                self.OnSave()
+
+        return result
 
 class AddPanel(wx.TextCtrl): # TODO: change to true panel
     def __init__(self, *args, **kwargs):
@@ -79,13 +137,4 @@ class AddPanel(wx.TextCtrl): # TODO: change to true panel
         self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter)
     
     def OnEnter(self, e):
-        try:
-            self.GetParent().AddFlight(self.GetValue())
-        except ValueError, e:
-            self.ErrorMessageBox(e.message)
-
-    def ErrorMessageBox(self, message):
-        dialog = wx.MessageDialog(self, message, 'Error adding flight',
-                                  wx.OK | wx.ICON_ERROR)
-        dialog.ShowModal()
-        dialog.Destroy()
+        self.GetParent().AddFlight(self.GetValue())

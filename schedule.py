@@ -17,10 +17,15 @@ class Schedule:
         else:
             raise TypeError('Schedule constructor takes 0 or 1 positional ' \
                     'argument (%d given)' % len(args)) 
+        self.modified = False
 
     def _init_file(self, filename):
+        infile = open(filename, 'r')
+        for line in infile:
+            if line:
+                self.add(line[:-1])
+        infile.close()
         self.filename = filename
-        print 'Schedule initialized to %s' % filename
     
     def num_flights(self, first=None, before=None, after=None):
         return len(self.get_range(first, after)) # TODO: make more efficient
@@ -50,3 +55,14 @@ class Schedule:
                     context=self.flights[-1].arr_time))
         else:
             bisect.insort(self.flights, flight.Flight(entry))
+        self.modified = True
+
+    def save(self, filename=None):
+        if filename is None:
+            filename = self.filename
+        outfile = open(filename, 'w')
+        for f in self.flights:
+            outfile.write(str(f) + '\n')
+        outfile.close()
+        self.filename = filename
+        self.modified = False
