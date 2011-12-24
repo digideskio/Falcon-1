@@ -51,6 +51,10 @@ class Schedule:
     def get(self, index):
         return self.flights[-(index + 1)]
 
+    def remove(self, index):
+        del self.flights[-(index + 1)]
+        self.modified = True
+
     def add(self, entry):
         if self.flights:
             bisect.insort(self.flights, flight.Flight(entry,

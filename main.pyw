@@ -2,14 +2,15 @@
 
 import wx
 
-import list
+import menu
+import listview
 
-class MainMenu(wx.MenuBar):
+class MainWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
-        wx.MenuBar.__init__(self, *args, **kwargs)
-
-        menuItems = {
-            "&File": [
+        wx.Frame.__init__(self, *args, **kwargs)
+        
+        menuItems = [
+            ("&File", [
                 (wx.ID_NEW, '&New\tCtrl+N',
                     'Start from a blank schedule'),
                 (wx.ID_OPEN, '&Open...\tCtrl+O',
@@ -22,34 +23,13 @@ class MainMenu(wx.MenuBar):
                 (),
                 (wx.ID_EXIT, 'E&xit\tAlt+F4',
                     'Terminate Falcon'),
-            ],
-        }
+            ])
+        ]
         
-        self.menuEvents = []
-        self._CreateMenu(self, menuItems)
-
-    def _CreateMenu(self, curr, items):
-        for header in items:
-            submenu = wx.Menu()
-            for entry in items[header]:
-                if isinstance(entry, dict):
-                    self._CreateMenu(submenu, entry)
-                elif entry:
-                    submenu.Append(*entry)
-                    self.menuEvents.append(entry[0])
-                else:
-                    submenu.AppendSeparator()
-
-            curr.Append(submenu, header)
-    
-class MainWindow(wx.Frame):
-    def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, *args, **kwargs)
-        
-        self.Menu = MainMenu()
+        self.Menu = menu.create_menu(wx.MenuBar, menuItems)
         self.SetMenuBar(self.Menu)
         
-        self.Panel = list.FlightsPanel(parent=self, id=wx.ID_ANY)
+        self.Panel = listview.FlightsPanel(parent=self, id=wx.ID_ANY)
         
         self.SmallIcon = wx.Icon('falcon.ico', wx.BITMAP_TYPE_ICO,
                 16, 16) # TODO
@@ -60,8 +40,7 @@ class MainWindow(wx.Frame):
         
         self.SetMinSize(kwargs['size'])
 
-        for event in self.Menu.menuEvents:
-            self.Bind(wx.EVT_MENU, self.OnMenuEvent)
+        self.Bind(wx.EVT_MENU, self.OnMenuEvent)
         
         self.Show()
     

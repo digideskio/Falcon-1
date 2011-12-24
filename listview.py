@@ -1,6 +1,7 @@
 import os
 import wx
 
+import menu
 import schedule
 
 
@@ -52,6 +53,8 @@ class FlightsList(wx.HtmlListBox):
 
     def __init__(self, *args, **kwargs):
         wx.HtmlListBox.__init__(self, *args, **kwargs)
+        self.Bind(wx.EVT_CONTEXT_MENU, self.OnContextMenu)
+        # TODO: separate data from user interface
         self.schedule = schedule.Schedule()
         self.Refresh()
 
@@ -71,7 +74,6 @@ class FlightsList(wx.HtmlListBox):
         self.Refresh()
 
     def FileCommand(self, id):
-        print 'FileCommand started'
         try:
             {
                 wx.ID_NEW: self.OnNew,
@@ -83,7 +85,6 @@ class FlightsList(wx.HtmlListBox):
             raise KeyError('Unrecognized file command: %s' % str(id))
 
         self.Refresh()
-        print 'FileCommand exited'
 
     def OnNew(self):
         if self.PromptToSave() != wx.ID_CANCEL:
@@ -132,6 +133,29 @@ class FlightsList(wx.HtmlListBox):
                 self.OnSave()
 
         return result
+
+    def OnContextMenu(self, e):
+        item = self.HitTest(self.ScreenToClient(e.GetPosition()))
+        self.Selection = item
+        self.Refresh()
+
+        if not hasattr(self, 'itemContext'):
+            menuItems = [
+                (wx.ID_DELETE,)
+            ]
+
+            self.itemContext = menu.create_menu(wx.Menu, menuItems)
+            self.Bind(wx.EVT_MENU, self.OnMenuEvent)
+
+        self.PopupMenu(self.itemContext)
+
+    def OnMenuEvent(self, e):
+        if e.Id == wx.ID_DELETE:
+            self.DeleteFlight(self.Selection)
+
+    def DeleteFlight(self, index):
+        self.schedule.remove(index)
+        self.Refresh()
 
 
 class AddPanel(wx.TextCtrl):  # TODO: change to true panel
