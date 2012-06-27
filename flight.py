@@ -1,8 +1,8 @@
-import os
 import re
 import datetime
 
 import airport
+
 
 def string_to_datetime(string, context=datetime.datetime.now(),
                        airport_id=None):
@@ -34,7 +34,8 @@ def string_to_datetime(string, context=datetime.datetime.now(),
     if airport_id and airport_id in airport.all_airports:
         return airport.all_airports[airport_id].timezone.localize(result)
     else:
-        return pytz.utc.localize(result)
+        return utc.localize(result)
+
 
 class Flight:
     def __init__(self, *args, **kwargs):
@@ -44,17 +45,17 @@ class Flight:
         elif 'str' in kwargs:
             self._init_str(**kwargs)
         elif len(args) == len(arg_names):
-            self._init_arr_dept(*args)
-        elif reduce(lambda x, y: x and y, 
+            self._init_dept_arr(*args)
+        elif reduce(lambda x, y: x and y,
                     [(name in kwargs) for name in arg_names]):
-            self._init_arr_dept(**kwargs)
+            self._init_dept_arr(**kwargs)
         else:
             raise TypeError('Flight constructor takes either a string (and ' +
                             'optionally a date/time context) or ' +
                             'the arguments (departs, dept_time, ' +
                             'arrives, arr_time)')
 
-    def _init_str(self, str, context=datetime.datetime.now()):
+    def _init_str(self, line, context=datetime.datetime.now()):
         date = r'\d{1,2}/\d{1,2}(/\d{4})?'
         time = r'\d{1,2}:?\d{2}'
         airport_code = r'[A-Za-z]{3}'
@@ -67,7 +68,7 @@ class Flight:
         arr_date = r'(?P<arr_date>' + date + r')'
         arr_time = r'(?P<arr_time>' + time + r')'
 
-        formats = [
+        date_formats = [
             ' '.join((dept_date, departs, dept_time, arrives, arr_time)),
             ' '.join((departs, dept_date, dept_time, arrives, arr_date,
                       arr_time)),
@@ -75,16 +76,16 @@ class Flight:
             ' '.join((dept_date, flight_number, departs, dept_time, arrives,
                       arr_time)),
         ]
-        formats = [re.compile(f) for f in formats]
+        date_formats = [re.compile(f) for f in date_formats]
 
-        for format in formats:
-            match = format.match(str)
+        for date_format in date_formats:
+            match = date_format.match(line)
             if match:
                 self._init_re(match, context)
                 return
-        
+
         raise ValueError('"%s" doesn\'t match any of the accepted formats.' %
-                         str)
+                         line)
 
     def _init_re(self, match, context):
         departs = match.group('departs')
@@ -96,7 +97,7 @@ class Flight:
                                  match.group('arr_time')))
         except IndexError:
             arr_time = ' '.join((match.group('dept_date'),
-                                 match.group('arr_time'))) 
+                                 match.group('arr_time')))
         self._init_dept_arr(departs, dept_time, arrives, arr_time, context)
 
     def _init_dept_arr(self, departs, dept_time, arrives, arr_time,
@@ -120,7 +121,7 @@ class Flight:
                                                       airport_id=arrives)
         else:
             self.arr_time = arr_time
-    
+
     def report(self, schedule):
         lines = [('%s&ndash;%s departs <b>%s</b> arrives <b>%s</b> ' +
                '<i>[%s]</i>') % (
@@ -144,9 +145,9 @@ class Flight:
 
     def length(self):
         return self.arr_time - self.dept_time
-    
+
     def __repr__(self):
-        return "Flight('%s')" % str(self) 
+        return "Flight('%s')" % str(self)
 
     def __str__(self):
         return '%s %s %s %s' % (
@@ -155,6 +156,6 @@ class Flight:
             self.arrives,
             self.arr_time.strftime('%x %H%M'),
         )
-    
+
     def __cmp__(self, other):
         return cmp(self.dept_time, other.dept_time)

@@ -3,30 +3,31 @@ import wx
 
 import schedule
 
+
 class FlightsPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
         wx.Panel.__init__(self, *args, **kwargs)
-        
+
         self.MainSizer = wx.BoxSizer(wx.VERTICAL)
-        
+
         self.AddPanel = AddPanel(parent=self)
         self.MainSizer.Add(self.AddPanel, border=4, proportion=0,
                 flag=wx.EXPAND | wx.ALL)
-        
+
         self.FlightsList = FlightsList(parent=self)
         self.MainSizer.Add(self.FlightsList, border=4, proportion=1,
                 flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM)
-        
+
         self.SetAutoLayout(True)
         self.SetSizer(self.MainSizer)
         self.Layout()
-        
+
         self.Bind(wx.EVT_SIZE, self.OnSize)
-    
+
     def OnSize(self, e):
         self.SetSize(e.GetSize())
         self.Layout()
-    
+
     def AddFlight(self, entry):
         try:
             self.FlightsList.AddFlight(entry)
@@ -36,14 +37,15 @@ class FlightsPanel(wx.Panel):
     def FileCommand(self, id):
         try:
             self.FlightsList.FileCommand(id)
-        except IOError, e:
-            self.ErrorMessageBox('File error', e.message)
+        except IOError, err:
+            self.ErrorMessageBox('File error', err.message)
 
     def ErrorMessageBox(self, title, message):
         dialog = wx.MessageDialog(self, message, title,
                                   wx.OK | wx.ICON_ERROR)
         dialog.ShowModal()
         dialog.Destroy()
+
 
 class FlightsList(wx.HtmlListBox):
     INITIAL_LENGTH = 100
@@ -52,16 +54,16 @@ class FlightsList(wx.HtmlListBox):
         wx.HtmlListBox.__init__(self, *args, **kwargs)
         self.schedule = schedule.Schedule()
         self.Refresh()
-        
+
     def OnGetItem(self, n):
         return self.Format(self.schedule.get(n))
-        
+
     def Format(self, entry):
         return entry.report(self.schedule)
 
     def Refresh(self):
-        self.SetItemCount(self.schedule.num_flights(first=
-                FlightsList.INITIAL_LENGTH))
+        self.SetItemCount(self.schedule.num_flights(
+                first=FlightsList.INITIAL_LENGTH))
         self.RefreshAll()
 
     def AddFlight(self, entry):
@@ -79,7 +81,7 @@ class FlightsList(wx.HtmlListBox):
             }[id]()
         except KeyError:
             raise KeyError('Unrecognized file command: %s' % str(id))
-        
+
         self.Refresh()
         print 'FileCommand exited'
 
@@ -100,7 +102,7 @@ class FlightsList(wx.HtmlListBox):
             self.schedule.save()
 
     def OnSaveAs(self):
-        filename = self.PromptForFile(wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)    
+        filename = self.PromptForFile(wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if filename is not None:
             self.schedule.save(filename)
 
@@ -131,10 +133,11 @@ class FlightsList(wx.HtmlListBox):
 
         return result
 
-class AddPanel(wx.TextCtrl): # TODO: change to true panel
+
+class AddPanel(wx.TextCtrl):  # TODO: change to true panel
     def __init__(self, *args, **kwargs):
         wx.TextCtrl.__init__(self, style=wx.TE_PROCESS_ENTER, *args, **kwargs)
         self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter)
-    
-    def OnEnter(self, e):
+
+    def OnEnter(self, dummy_event):
         self.GetParent().AddFlight(self.GetValue())

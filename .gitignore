@@ -13,3 +13,7 @@ dist
 
 # Notepad++ session file (who cares what I have open in my text editor?)
 nppsess
+
+# Eclipse project files
+.project
+.pydevproject

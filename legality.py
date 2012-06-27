@@ -1,10 +1,9 @@
 from datetime import timedelta
 
-import flight
 
 def thirty_in_seven(this, schedule):
-    def total(ls):
-        return reduce(lambda x, y: x + y, ls)
+    def total(collection):
+        return reduce(lambda x, y: x + y, collection)
 
     seven_days = timedelta(days=7)
 
@@ -19,19 +18,19 @@ def thirty_in_seven(this, schedule):
         )
     )
 
-requirements = [
+REQUIREMENTS = [
     thirty_in_seven,
 ]
+
 
 def check(this, schedule):
     legal = True
     status = []
 
-    for requirement in requirements:
+    for requirement in REQUIREMENTS:
         req_legal, req_status = requirement(this, schedule)
         if not req_legal:
             legal = False
             status.append(req_status)
 
     return legal, status
-
