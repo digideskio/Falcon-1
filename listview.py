@@ -3,6 +3,7 @@ import wx
 
 import menu
 import schedule
+import edit
 
 
 class FlightsPanel(wx.Panel):
@@ -141,7 +142,8 @@ class FlightsList(wx.HtmlListBox):
 
         if not hasattr(self, 'itemContext'):
             menuItems = [
-                (wx.ID_DELETE,)
+                (wx.ID_EDIT,),
+                (wx.ID_DELETE,),
             ]
 
             self.itemContext = menu.create_menu(wx.Menu, menuItems)
@@ -150,12 +152,20 @@ class FlightsList(wx.HtmlListBox):
         self.PopupMenu(self.itemContext)
 
     def OnMenuEvent(self, e):
-        if e.Id == wx.ID_DELETE:
-            self.DeleteFlight(self.Selection)
+        try:
+            {
+                wx.ID_DELETE: self.DeleteFlight,
+                wx.ID_EDIT: self.EditFlight,
+            }[e.Id](self.Selection)
+        except KeyError:
+            raise AssertionError('Unrecognized file command: %s' % str(id))
 
     def DeleteFlight(self, index):
         self.schedule.remove(index)
         self.Refresh()
+
+    def EditFlight(self, index):
+        edit.EditDialog(self.schedule.get(index), parent=self).Show()
 
 
 class AddPanel(wx.TextCtrl):  # TODO: change to true panel
