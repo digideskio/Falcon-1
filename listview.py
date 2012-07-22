@@ -4,6 +4,7 @@ import wx
 import menu
 import schedule
 import edit
+import flight
 
 
 class FlightsPanel(wx.Panel):
@@ -71,7 +72,7 @@ class FlightsList(wx.HtmlListBox):
         self.RefreshAll()
 
     def AddFlight(self, entry):
-        self.schedule.add(entry)
+        self.schedule.add(flight.from_line(entry, self.schedule.context()))
         self.Refresh()
 
     def FileCommand(self, id):

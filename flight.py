@@ -5,7 +5,7 @@ import airport
 
 
 def string_to_datetime(string, context=datetime.datetime.now(),
-                       airport_id=None):
+                       airport=None):
     from pytz import utc
 
     components = string.split(' ')
@@ -20,8 +20,13 @@ def string_to_datetime(string, context=datetime.datetime.now(),
             date = datetime.datetime.strptime(components[0], '%m/%d').\
                                      replace(year=context.year).date()
         elif components[0].count('/') == 2:
-            date = datetime.datetime.strptime(components[0], '%m/%d/%Y').\
-                                     date()
+            year_len = len(components[0]) - components[0].rfind('/') - 1
+            if year_len == 4:
+                date = datetime.datetime.strptime(components[0],
+                                                  '%m/%d/%Y').date()
+            elif year_len == 2:
+                date = datetime.datetime.strptime(components[0],
+                                                  '%m/%d/%y').date()
 
     time = None
     if ':' in time_str:
@@ -31,96 +36,99 @@ def string_to_datetime(string, context=datetime.datetime.now(),
 
     result = datetime.datetime.combine(date, time)
 
-    if airport_id and airport_id in airport.all_airports:
-        return airport.all_airports[airport_id].timezone.localize(result)
+    if airport:
+        return airport.timezone.localize(result)
     else:
         return utc.localize(result)
 
 
-class Flight:
-    def __init__(self, *args, **kwargs):
-        arg_names = ('departs', 'dept_time', 'arrives', 'arr_time')
-        if len(args) in (1, 2):
-            self._init_str(*args)
-        elif 'str' in kwargs:
-            self._init_str(**kwargs)
-        elif len(args) == len(arg_names):
-            self._init_dept_arr(*args)
-        elif reduce(lambda x, y: x and y,
-                    [(name in kwargs) for name in arg_names]):
-            self._init_dept_arr(**kwargs)
-        else:
-            raise TypeError('Flight constructor takes either a string (and ' +
-                            'optionally a date/time context) or ' +
-                            'the arguments (departs, dept_time, ' +
-                            'arrives, arr_time)')
+def from_line(line, context=None):
+    if context is None:
+        context = datetime.datetime.now()
 
-    def _init_str(self, line, context=datetime.datetime.now()):
-        date = r'\d{1,2}/\d{1,2}(/\d{4})?'
-        time = r'\d{1,2}:?\d{2}'
-        airport_code = r'[A-Za-z]{3}'
-        flight_number = r'\d{2,5}'
+    date = r'\d{1,2}/\d{1,2}(/\d{2}(\d{2})?)?'
+    time = r'\d{1,2}:?\d{2}'
+    airport_code = r'[A-Za-z]{3}'
+    flight_number = r'\d{2,5}'
 
-        departs = r'(?P<departs>' + airport_code + r')'
-        arrives = r'(?P<arrives>' + airport_code + r')'
-        dept_date = r'(?P<dept_date>' + date + r')'
-        dept_time = r'(?P<dept_time>' + time + r')'
-        arr_date = r'(?P<arr_date>' + date + r')'
-        arr_time = r'(?P<arr_time>' + time + r')'
+    departs = r'(?P<departs>' + airport_code + r')'
+    arrives = r'(?P<arrives>' + airport_code + r')'
+    dept_date = r'(?P<dept_date>' + date + r')'
+    dept_time = r'(?P<dept_time>' + time + r')'
+    arr_date = r'(?P<arr_date>' + date + r')'
+    arr_time = r'(?P<arr_time>' + time + r')'
 
-        date_formats = [
-            ' '.join((dept_date, departs, dept_time, arrives, arr_time)),
-            ' '.join((departs, dept_date, dept_time, arrives, arr_date,
-                      arr_time)),
-            ' '.join((departs, dept_date, dept_time, arrives, arr_time)),
-            ' '.join((dept_date, flight_number, departs, dept_time, arrives,
-                      arr_time)),
-        ]
-        date_formats = [re.compile(f) for f in date_formats]
+    date_formats = [
+        ' '.join((dept_date, departs, dept_time, arrives, arr_time)),
+        ' '.join((departs, dept_date, dept_time, arrives, arr_date,
+                  arr_time)),
+        ' '.join((departs, dept_date, dept_time, arrives, arr_time)),
+        ' '.join((dept_date, flight_number, departs, dept_time, arrives,
+                  arr_time)),
+    ]
+    date_formats = [re.compile(f) for f in date_formats]
 
-        for date_format in date_formats:
-            match = date_format.match(line)
-            if match:
-                self._init_re(match, context)
-                return
+    for date_format in date_formats:
+        match = date_format.match(line)
+        if match:
+            return _from_re(match, context)
 
-        raise ValueError('"%s" doesn\'t match any of the accepted formats.' %
-                         line)
+    raise ValueError('"%s" doesn\'t match any of the accepted formats.' %
+                     line)
 
-    def _init_re(self, match, context):
-        departs = match.group('departs')
-        arrives = match.group('arrives')
-        dept_time = ' '.join((match.group('dept_date'),
-                              match.group('dept_time')))
-        try:
-            arr_time = ' '.join((match.group('arr_date'),
-                                 match.group('arr_time')))
-        except IndexError:
-            arr_time = ' '.join((match.group('dept_date'),
-                                 match.group('arr_time')))
-        self._init_dept_arr(departs, dept_time, arrives, arr_time, context)
 
-    def _init_dept_arr(self, departs, dept_time, arrives, arr_time,
-            context=datetime.datetime.now()):
+def _from_re(match, context):
+    departs = airport.get_airport(match.group('departs'))
+    arrives = airport.get_airport(match.group('arrives'))
+    dept_time = ' '.join((match.group('dept_date'),
+                          match.group('dept_time')))
+    try:
+        arr_time = ' '.join((match.group('arr_date'),
+                             match.group('arr_time')))
+    except IndexError:
+        arr_time = ' '.join((match.group('dept_date'),
+                             match.group('arr_time')))
+    return Flight(departs=departs,
+                  dept_time=string_to_datetime(dept_time, context, departs),
+                  arrives=arrives,
+                  arr_time=string_to_datetime(arr_time, context, arrives),
+                  context=context)
+
+
+class Flight(object):
+    def __init__(self, departs, dept_time, arrives, arr_time,
+                 context=None):
+        if context is None:
+            context = datetime.datetime.now()
+
         self.departs = departs
         self.arrives = arrives
+        self._dept_time = dept_time
+        self._arr_time = arr_time
+        self._listeners = []
 
-        if isinstance(dept_time, basestring):
-            self.dept_time = string_to_datetime(dept_time, context,
-                                                airport_id=departs)
-        else:
-            self.dept_time = dept_time
+    def _get_dept_time(self):
+        return self._dept_time
 
-        if isinstance(arr_time, basestring):
-            self.arr_time = string_to_datetime(arr_time,
-                                               context=self.dept_time,
-                                               airport_id=arrives)
-        elif isinstance(arr_time, datetime.time):
-            self.arr_time = datetime.datetime.combine(self.dept_time.date,
-                                                      arr_time,
-                                                      airport_id=arrives)
-        else:
-            self.arr_time = arr_time
+    def _set_dept_time(self, dept_time):
+        self._dept_time = dept_time
+        self.update()
+
+    dept_time = property(_get_dept_time, _set_dept_time)
+
+    def _get_arr_time(self):
+        return self._arr_time
+
+    def _set_arr_time(self, arr_time):
+        self._arr_time = arr_time
+        self.update()
+
+    arr_time = property(_get_arr_time, _set_arr_time)
+
+    def assign(self, other):
+        (self.arrives, self.departs,
+         self.arr_time, self.dept_time) = (other.arrives, other.departs,
+                                           other.arr_time, other.dept_time)
 
     def report(self, schedule):
         lines = [('%s&ndash;%s departs <b>%s</b> arrives <b>%s</b> ' +
@@ -139,12 +147,19 @@ class Flight:
             lines.append('&nbsp;&nbsp;&nbsp;<small>' + status_line +
                          '</small>')
 
-        font_color = {True: 'green', False: 'red'}[legal]
+        font_color = 'green' if legal else 'red'
         return '<font color="' + font_color + '">' + \
                '<br />'.join(lines) + '</font>'
 
     def length(self):
         return self.arr_time - self.dept_time
+
+    def add_listener(self, listener):
+        self._listeners.append(listener)
+
+    def update(self):
+        for listener in self._listeners:
+            listener.update(self)
 
     def __repr__(self):
         return "Flight('%s')" % str(self)

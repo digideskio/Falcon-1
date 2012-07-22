@@ -61,6 +61,10 @@ def add_airport(airport):
     save_airports()
 
 
+def get_airport(code):
+    return all_airports[code]
+
+
 class Airport:
     def __init__(self, *args, **kwargs):
         arg_names = ('code', 'timezone')
@@ -85,7 +89,7 @@ class Airport:
         self.timezone = pytz.timezone(timezone)
 
     def __repr__(self):
-        return self.line()
+        return self.code
 
     def line(self):
         return ' '.join([self.code, self.timezone.zone])

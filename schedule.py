@@ -24,7 +24,8 @@ class Schedule:
         infile = open(filename, 'r')
         for line in infile:
             if line:
-                self.add(line[:-1])
+                self.add(flight.from_line(line[:-1],
+                                          context=self.context()))
         infile.close()
         self.filename = filename
 
@@ -41,10 +42,10 @@ class Schedule:
             result = self.flights[-first:]
 
         if after is not None:
-            result = filter(lambda f: f.arr_time >= after, result)
+            result = [f for f in result if f.arr_time >= after]
 
         if before is not None:
-            result = filter(lambda f: f.dept_time <= before, result)
+            result = [f for f in result if f.dept_time <= before]
 
         return result
 
@@ -56,11 +57,18 @@ class Schedule:
         self.modified = True
 
     def add(self, entry):
+        bisect.insort(self.flights, entry)
+        entry.add_listener(self)
+        self.modified = True
+
+    def context(self):
         if self.flights:
-            bisect.insort(self.flights, flight.Flight(entry,
-                    context=self.flights[-1].arr_time))
+            return self.get(0).arr_time
         else:
-            bisect.insort(self.flights, flight.Flight(entry))
+            return None
+
+    def update(self, _entry):
+        self.flights.sort()
         self.modified = True
 
     def save(self, filename=None):
