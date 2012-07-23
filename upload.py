@@ -24,7 +24,7 @@ FILES = {
 def output_of(cmd):
     cmd = cmd.strip().replace('\n', ' ')
     print(cmd)
-    output = subprocess.check_output(cmd.split(), shell=True)
+    output = subprocess.check_output(cmd, shell=True)
     print(output)
     return output
 
@@ -50,7 +50,7 @@ def upload(filename, desc):
     ''' % args
 
     data = json.loads(output_of(create_cmd))
-    data.filename = filename
+    data['filename'] = filename
 
     # upload filename to bucket
     upload_cmd = '''
@@ -65,7 +65,7 @@ def upload(filename, desc):
              -F "Content-Type=%(mime_type)s"
              -F "file=@%(filename)s"
              https://github.s3.amazonaws.com/
-    ''' % data.__dict__
+    ''' % data
 
     xml = output_of(upload_cmd)
 
