@@ -3,7 +3,7 @@ from datetime import timedelta
 
 def thirty_in_seven(this, schedule):
     def total(collection):
-        return reduce(lambda x, y: x + y, collection)
+        return reduce(lambda x, y: x + y, collection, timedelta())
 
     seven_days = timedelta(days=7)
 

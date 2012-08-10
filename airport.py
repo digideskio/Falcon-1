@@ -11,6 +11,15 @@ class FileError(Exception):
     pass
 
 
+class NoSuchAirportError(Exception):
+    def __init__(self, code):
+        Exception.__init__(self)
+        self.code = code
+
+    def __str__(self):
+        return self.code
+
+
 def check_file(name):
     if os.path.isfile(name):
         return
@@ -62,7 +71,10 @@ def add_airport(airport):
 
 
 def get_airport(code):
-    return all_airports[code]
+    try:
+        return all_airports[code]
+    except KeyError:
+        raise NoSuchAirportError(code)
 
 
 class Airport:

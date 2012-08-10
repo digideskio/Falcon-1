@@ -1,5 +1,6 @@
 import re
 import datetime
+import wx
 
 import airport
 
@@ -42,10 +43,37 @@ def string_to_datetime(string, context=datetime.datetime.now(),
         return utc.localize(result)
 
 
+def datetime_to_wx(date):
+    return wx.DateTimeFromDMY(date.day, date.month - 1, date.year,
+                              date.hour, date.minute, date.second,
+                              date.microsecond / 1000)
+
+
+def format_date(date):
+    return date.Format('%m/%d/%y')
+
+
+def format_time(time):
+    return time.Format('%H%M')
+
+
 def from_line(line, context=None):
     if context is None:
         context = datetime.datetime.now()
 
+    return Flight(**_build_objects(parse_line(line), context))
+
+
+def _build_objects(components, context):
+    pairs = {'departs': 'dept_time', 'arrives': 'arr_time'}
+    for key in pairs:
+        components[key] = airport.get_airport(components[key])
+        components[pairs[key]] = string_to_datetime(components[pairs[key]],
+                                                    context, components[key])
+    return components
+
+
+def parse_line(line):
     date = r'\d{1,2}/\d{1,2}(/\d{2}(\d{2})?)?'
     time = r'\d{1,2}:?\d{2}'
     airport_code = r'[A-Za-z]{3}'
@@ -71,15 +99,15 @@ def from_line(line, context=None):
     for date_format in date_formats:
         match = date_format.match(line)
         if match:
-            return _from_re(match, context)
+            return _extract_from_match(match)
 
     raise ValueError('"%s" doesn\'t match any of the accepted formats.' %
                      line)
 
 
-def _from_re(match, context):
-    departs = airport.get_airport(match.group('departs'))
-    arrives = airport.get_airport(match.group('arrives'))
+def _extract_from_match(match):
+    departs = match.group('departs')
+    arrives = match.group('arrives')
     dept_time = ' '.join((match.group('dept_date'),
                           match.group('dept_time')))
     try:
@@ -88,19 +116,16 @@ def _from_re(match, context):
     except IndexError:
         arr_time = ' '.join((match.group('dept_date'),
                              match.group('arr_time')))
-    return Flight(departs=departs,
-                  dept_time=string_to_datetime(dept_time, context, departs),
-                  arrives=arrives,
-                  arr_time=string_to_datetime(arr_time, context, arrives),
-                  context=context)
+    return {
+        'departs': departs,
+        'arrives': arrives,
+        'dept_time': dept_time,
+        'arr_time': arr_time
+    }
 
 
 class Flight(object):
-    def __init__(self, departs, dept_time, arrives, arr_time,
-                 context=None):
-        if context is None:
-            context = datetime.datetime.now()
-
+    def __init__(self, departs, dept_time, arrives, arr_time):
         self.departs = departs
         self.arrives = arrives
         self._dept_time = dept_time
@@ -174,3 +199,8 @@ class Flight(object):
 
     def __cmp__(self, other):
         return cmp(self.dept_time, other.dept_time)
+
+    @classmethod
+    def copy_of(cls, other):
+        return Flight(other.departs, other.dept_time,
+                      other.arrives, other.arr_time)
