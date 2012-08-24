@@ -1,6 +1,7 @@
 # Python distutils output directories
 build
 dist
+falcon-win32.zip
 
 # Temporary vim files
 *~
