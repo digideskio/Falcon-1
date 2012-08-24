@@ -45,19 +45,31 @@ class ProxyFlight(object):
     LINE_CHANGED = object()
     COMPONENT_CHANGED = object()
 
-    def __init__(self, line, context):
-        self.context = context
-        self._line = line
+    def __init__(self, real_flight):
+        self.flight = real_flight
+        self.context = real_flight.dept_time
+        self._line = str(real_flight)
 
         # help out the code analysis tools
         (self._departs, self._arrives,
          self._dept_time, self._arr_time) = None, None, None, None
         self.listeners = []
 
-        self._split_line()
+        self._split_line(catch_errors=True)
 
-    def _split_line(self):
-        components = flight.parse_line(self._line)
+    def _split_line(self, catch_errors=False):
+        components = None
+        try:
+            components = flight.parse_line(self._line)
+        except ValueError:
+            if catch_errors:
+                self._departs = ''
+                self._arrives = ''
+                self._dept_time = wx.DateTime.Today()
+                self._arr_time = wx.DateTime.Today()
+                return
+            else:
+                raise
 
         (self._departs, self._arrives) = (components['departs'],
                                           components['arrives'])
@@ -129,9 +141,12 @@ class ProxyFlight(object):
     def to_flight(self):
         return flight.from_line(self._line)
 
+    def assign(self):
+        self.flight.assign(self.to_flight())
+
     @classmethod
     def from_flight(cls, other):
-        return ProxyFlight(str(other), other.dept_time)
+        return ProxyFlight(other)
 
 
 class EditDialog(wx.Dialog):
@@ -146,7 +161,6 @@ class EditDialog(wx.Dialog):
         '''
         wx.Dialog.__init__(self, *args, **kwargs)
 
-        self.flight = tracked_flight
         self.proxy_flight = ProxyFlight.from_flight(tracked_flight)
         self.proxy_flight.add_listener(self)
 
@@ -163,7 +177,8 @@ class EditDialog(wx.Dialog):
         controls_sizer = wx.FlexGridSizer(2, 6, 5, 5)
         controls_sizer.Add(wx.StaticText(self, label='Departs'),
                            flag=wx.ALIGN_CENTER_VERTICAL)
-        self.departs_combo = wx.ComboBox(self, value=self.flight.departs.code)
+        self.departs_combo = wx.ComboBox(self,
+                                         value=self.proxy_flight.departs)
         controls_sizer.Add(self.departs_combo)
         controls_sizer.Add(wx.StaticText(self, label='on'),
                            flag=wx.ALIGN_CENTER_VERTICAL)
@@ -176,7 +191,8 @@ class EditDialog(wx.Dialog):
 
         controls_sizer.Add(wx.StaticText(self, label='Arrives'),
                            flag=wx.ALIGN_CENTER_VERTICAL)
-        self.arrives_combo = wx.ComboBox(self, value=self.flight.arrives.code)
+        self.arrives_combo = wx.ComboBox(self,
+                                         value=self.proxy_flight.arrives)
         controls_sizer.Add(self.arrives_combo)
         controls_sizer.Add(wx.StaticText(self, label='on'),
                            flag=wx.ALIGN_CENTER_VERTICAL)
@@ -221,7 +237,7 @@ class EditDialog(wx.Dialog):
 
     def OkButton(self, _evt):
         try:
-            self.flight.assign(self.proxy_flight.to_flight())
+            self.proxy_flight.assign()
         except ValueError, err:
             self.ErrorMessageBox("Invalid flight string", err.message)
         else:

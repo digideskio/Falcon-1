@@ -1,5 +1,6 @@
 import os
 import wx
+import datetime
 
 import menu
 import schedule
@@ -169,10 +170,49 @@ class FlightsList(wx.HtmlListBox):
         edit.EditDialog(self.schedule.get(index), parent=self).Show()
 
 
-class AddPanel(wx.TextCtrl):  # TODO: change to true panel
+class NewFlight(object):
+    def __init__(self, listview):
+        self.listview = listview
+        context_flight = None
+        try:
+            context_flight = listview.schedule.get(0)
+        except IndexError:
+            self.dept_time = datetime.datetime.now()
+            self.line = ''
+        else:
+            self.dept_time = context_flight.dept_time
+            self.line = str(context_flight)
+
+    def assign(self, other):
+        self.listview.schedule.add(other)
+        self.listview.Refresh()
+
+    def __str__(self):
+        return self.line
+
+
+class AddPanel(wx.Panel):  # TODO: change to true panel
     def __init__(self, *args, **kwargs):
-        wx.TextCtrl.__init__(self, style=wx.TE_PROCESS_ENTER, *args, **kwargs)
-        self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter)
+        wx.Panel.__init__(self, *args, **kwargs)
+
+        self.add_button = wx.Button(parent=self, label='Add Flight')
+        self.quick_add = wx.TextCtrl(parent=self, style=wx.TE_PROCESS_ENTER)
+
+        self.Bind(wx.EVT_BUTTON, self.OnAddFlight, self.add_button)
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter, self.quick_add)
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.add_button, flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add((10, 0))
+        sizer.Add(wx.StaticText(parent=self, label='Quick add: '),
+                  flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.quick_add, flag=wx.ALIGN_CENTER_VERTICAL,
+                  proportion=1)
+        self.SetSizerAndFit(sizer)
 
     def OnEnter(self, dummy_event):
-        self.GetParent().AddFlight(self.GetValue())
+        self.GetParent().AddFlight(self.quick_add.GetValue())
+
+    def OnAddFlight(self, dummy_event):
+        new_flight = NewFlight(self.GetParent().FlightsList)
+        edit.EditDialog(new_flight, parent=self.GetParent()).Show()
