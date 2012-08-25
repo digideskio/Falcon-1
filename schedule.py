@@ -6,10 +6,10 @@ class Schedule:
     def __init__(self, *args, **kwargs):
         self.flights = []
         if len(args) == 1:
-            self._init_file(args[0])
+            self.load_file(args[0])
         elif len(args) == 0:
             if 'filename' in kwargs:
-                self._init_file(kwargs['filename'])
+                self.load_file(kwargs['filename'])
             elif kwargs:
                 raise TypeError('Schedule constructor got an unexpected ' \
                         'keyword argument \'%s\'' % kwargs.keys()[0])
@@ -20,14 +20,15 @@ class Schedule:
                     'argument (%d given)' % len(args))
         self.modified = False
 
-    def _init_file(self, filename):
+    def load_file(self, filename, associate_filename=True):
         infile = open(filename, 'r')
         for line in infile:
             if line:
                 self.add(flight.from_line(line[:-1],
                                           context=self.context()))
         infile.close()
-        self.filename = filename
+        if associate_filename:
+            self.filename = filename
 
     def num_flights(self, first=None, before=None, after=None):
         # TODO: make more efficient

@@ -1,9 +1,11 @@
 import wx
 
+
 def create_menu(cls, items):
     newMenu = cls()
     build_menu(newMenu, items)
     return newMenu
+
 
 def build_menu(curr, items):
     for item in items:
@@ -16,3 +18,5 @@ def build_menu(curr, items):
         else:
             curr.AppendSeparator()
 
+
+ID_IMPORT = wx.ID_HIGHEST + 1

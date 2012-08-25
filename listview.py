@@ -38,6 +38,9 @@ class FlightsPanel(wx.Panel):
         except ValueError, e:
             self.ErrorMessageBox('Error adding flight', e.message)
 
+    def OnImport(self):
+        self.FlightsList.FileCommand(menu.ID_IMPORT)
+
     def FileCommand(self, id):
         try:
             self.FlightsList.FileCommand(id)
@@ -83,6 +86,7 @@ class FlightsList(wx.HtmlListBox):
                 wx.ID_OPEN: self.OnOpen,
                 wx.ID_SAVE: self.OnSave,
                 wx.ID_SAVEAS: self.OnSaveAs,
+                menu.ID_IMPORT: self.OnImport,
             }[id]()
         except KeyError:
             raise KeyError('Unrecognized file command: %s' % str(id))
@@ -109,6 +113,11 @@ class FlightsList(wx.HtmlListBox):
         filename = self.PromptForFile(wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if filename is not None:
             self.schedule.save(filename)
+
+    def OnImport(self):
+        filename = self.PromptForFile(wx.FD_OPEN)
+        if filename is not None:
+            self.schedule.load_file(filename, False)
 
     def PromptForFile(self, mode):
         wildcard = 'Itinerary text file (*.txt)|*.txt|' \
@@ -196,13 +205,16 @@ class AddPanel(wx.Panel):  # TODO: change to true panel
         wx.Panel.__init__(self, *args, **kwargs)
 
         self.add_button = wx.Button(parent=self, label='Add Flight')
+        self.import_button = wx.Button(parent=self, label='Import Schedule')
         self.quick_add = wx.TextCtrl(parent=self, style=wx.TE_PROCESS_ENTER)
 
         self.Bind(wx.EVT_BUTTON, self.OnAddFlight, self.add_button)
+        self.Bind(wx.EVT_BUTTON, self.OnImport, self.import_button)
         self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter, self.quick_add)
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add(self.add_button, flag=wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(self.import_button, flag=wx.ALIGN_CENTER_VERTICAL)
         sizer.Add((10, 0))
         sizer.Add(wx.StaticText(parent=self, label='Quick add: '),
                   flag=wx.ALIGN_CENTER_VERTICAL)
@@ -216,3 +228,6 @@ class AddPanel(wx.Panel):  # TODO: change to true panel
     def OnAddFlight(self, dummy_event):
         new_flight = NewFlight(self.GetParent().FlightsList)
         edit.EditDialog(new_flight, parent=self.GetParent()).Show()
+
+    def OnImport(self, dummy_event):
+        self.GetParent().OnImport()
