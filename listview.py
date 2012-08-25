@@ -6,6 +6,7 @@ import menu
 import schedule
 import edit
 import flight
+from airport import NoSuchAirportError
 
 
 class FlightsPanel(wx.Panel):
@@ -33,10 +34,18 @@ class FlightsPanel(wx.Panel):
         self.Layout()
 
     def AddFlight(self, entry):
-        try:
-            self.FlightsList.AddFlight(entry)
-        except ValueError, e:
-            self.ErrorMessageBox('Error adding flight', e.message)
+        while True:
+            try:
+                self.FlightsList.AddFlight(entry)
+            except ValueError, err:
+                self.ErrorMessageBox('Invalid flight string', err.message)
+                return False
+            except NoSuchAirportError, err:
+                result = edit.AddAirportDialog(err.code, parent=self).ask()
+                if result == wx.ID_CANCEL:
+                    return False
+            else:
+                return True
 
     def OnImport(self):
         self.FlightsList.FileCommand(menu.ID_IMPORT)
@@ -200,7 +209,7 @@ class NewFlight(object):
         return self.line
 
 
-class AddPanel(wx.Panel):  # TODO: change to true panel
+class AddPanel(wx.Panel):
     def __init__(self, *args, **kwargs):
         wx.Panel.__init__(self, *args, **kwargs)
 
@@ -223,7 +232,8 @@ class AddPanel(wx.Panel):  # TODO: change to true panel
         self.SetSizerAndFit(sizer)
 
     def OnEnter(self, dummy_event):
-        self.GetParent().AddFlight(self.quick_add.GetValue())
+        if self.GetParent().AddFlight(self.quick_add.GetValue()):
+            self.quick_add.SetValue('')
 
     def OnAddFlight(self, dummy_event):
         new_flight = NewFlight(self.GetParent().FlightsList)
