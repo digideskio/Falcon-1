@@ -15,12 +15,17 @@ This is the simplest way to install on Windows.
   (If you don't like that link, it's on the
   `Downloads <https://github.com/futurulus/falcon/downloads>`_ page, which you
   can also get to by clicking a nondescript tab up in the top right of this
-  page.) 
+  page.)
+- [Optional step: right-click on the zip file, choose Properties, and down at
+  bottom where it says Security, click the Unblock button. This will stop an
+  annoying window from popping up every time you try to run the program asking
+  if you're *sure* you want to run the program.]
 - Unzip (Extract All...) the package somewhere where you'll remember it.
 - Go into the resulting folder and double-click falcon.exe.
 
 If it works...hooray! If it doesn't, let me know what happened instead, and
-I'll see what can be done to fix it.
+I'll see what can be done to fix it. My email address is my Github username at
+GMail.
 
 Installing from source
 ----------------------
