@@ -1,19 +1,21 @@
 README for Falcon Flight Hours Tracker
 ======================================
 
-I'll put some real README material up once I have some real functionality in
-this thing.  Until then, here's the bare bones for anyone who cares enough to
-try to get it working on their machine...
+Thanks for checking out Falcon! So far I haven't had the chance to get much
+feedback on how well this program works on other people's machines, so please
+try it out and let me know what happens (good or bad!). Here's the bare bones
+you need to know to try to get it working on your computer...
 
 Pre-built executable
 --------------------
 
 This is the simplest way to install on Windows.
 
-- Click on the Downloads link above. (It's on the right, about a thumb's
-  length from the top of the page. I wish Github would make it a bit
-  more enticing...)
-- Download falcon-win32.zip.
+- Download `falcon-win32.zip <https://github.com/downloads/futurulus/falcon/falcon-win32.zip>`_.
+  (If you don't like that link, it's on the
+  `Downloads <https://github.com/futurulus/falcon/downloads>`_ page, which you
+  can also get to by clicking a nondescript tab up in the top right of this
+  page.) 
 - Unzip (Extract All...) the package somewhere where you'll remember it.
 - Go into the resulting folder and double-click falcon.exe.
 
@@ -29,20 +31,19 @@ you can run the program. You'll need to download these pieces first:
 - Python (http://python.org/download/)
 - wxPython (http://wxpython.org/download.php#stable)
 
-Then, click on ZIP (the cloud icon, top left |--| ish), extract it somewhere,
-and double-click main.pyw. If nothing happens at all, try running it from the
-command line/terminal::
+Then, download the `source <https://github.com/futurulus/falcon/zipball/master>`_
+(you can also click the "ZIP" cloud icon, top left |--| ish), extract it
+somewhere, and double-click main.pyw. If nothing happens at all, try running
+it from the command line/terminal::
 
   (On Windows)
   > C:\Python27\python main.pyw
-  (On Linux)
+  (On Mac/Linux)
   > python main.pyw
 
 This can be a pain to get working correctly, especially if you're on
-Windows and you've never run a Python program from source before. On the
-other hand, as a reward, the program will look
-`much nicer <https://github.com/futurulus/falcon/issues/10>`_ if you do this.
-Also, this is the only way to get the program running on Mac or Linux.
+Windows and you've never run a Python program from source before. However,
+this is the only way to get the program running on Mac or Linux.
 
 My test setup
 -------------

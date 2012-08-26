@@ -36,7 +36,8 @@ def add_pytz_files():
 
 setup(windows=[
           {'script': 'main.pyw',
-           'icon_resources': [(1, 'falcon.ico')]}
+           'icon_resources': [(1, 'falcon.ico')],
+           'other_resources': [(24, 1, open('MANIFEST', 'r').read())]}
       ],
       data_files=[
           ('', ['falcon.ico'])
