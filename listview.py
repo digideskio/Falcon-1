@@ -6,7 +6,6 @@ import menu
 import schedule
 import edit
 import flight
-from airport import NoSuchAirportError
 
 
 class FlightsPanel(wx.Panel):
@@ -34,18 +33,9 @@ class FlightsPanel(wx.Panel):
         self.Layout()
 
     def AddFlight(self, entry):
-        while True:
-            try:
-                self.FlightsList.AddFlight(entry)
-            except ValueError, err:
-                self.ErrorMessageBox('Invalid flight string', err.message)
-                return False
-            except NoSuchAirportError, err:
-                result = edit.AddAirportDialog(err.code, parent=self).ask()
-                if result == wx.ID_CANCEL:
-                    return False
-            else:
-                return True
+        def add_action():
+            self.FlightsList.AddFlight(entry)
+        return edit.try_flight(add_action, self)
 
     def OnImport(self):
         self.FlightsList.FileCommand(menu.ID_IMPORT)
@@ -57,8 +47,7 @@ class FlightsPanel(wx.Panel):
             self.ErrorMessageBox('File error', err.message)
 
     def ErrorMessageBox(self, title, message):
-        dialog = wx.MessageDialog(self, message, title,
-                                  wx.OK | wx.ICON_ERROR)
+        dialog = wx.MessageDialog(self, message, title, wx.OK)
         dialog.ShowModal()
         dialog.Destroy()
 
@@ -110,7 +99,9 @@ class FlightsList(wx.HtmlListBox):
         if self.PromptToSave() != wx.ID_CANCEL:
             filename = self.PromptForFile(wx.FD_OPEN)
             if filename is not None:
-                self.schedule = schedule.Schedule(filename)
+                def open_action():
+                    self.schedule = schedule.Schedule(filename)
+                edit.try_flight(open_action, self.GetParent())
 
     def OnSave(self):
         if self.schedule.filename is None:
@@ -126,7 +117,9 @@ class FlightsList(wx.HtmlListBox):
     def OnImport(self):
         filename = self.PromptForFile(wx.FD_OPEN)
         if filename is not None:
-            self.schedule.load_file(filename, False)
+            def import_action():
+                self.schedule.load_file(filename, False)
+            edit.try_flight(import_action, ui_context=self.GetParent())
 
     def PromptForFile(self, mode):
         wildcard = 'Itinerary text file (*.txt)|*.txt|' \

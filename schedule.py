@@ -22,10 +22,15 @@ class Schedule:
 
     def load_file(self, filename, associate_filename=True):
         infile = open(filename, 'r')
+        flights = []
         for line in infile:
             if line:
-                self.add(flight.from_line(line[:-1],
-                                          context=self.context()))
+                flights.append(flight.from_line(line[:-1],
+                                                context=self.context()))
+        # Don't add until all flight creations are successful, so
+        # error handling will work properly
+        for new_flight in flights:
+            self.add(new_flight)
         infile.close()
         if associate_filename:
             self.filename = filename

@@ -317,20 +317,11 @@ class EditDialog(wx.Dialog):
         sizer.Fit(self)
 
     def OkButton(self, _evt):
-        while True:
-            try:
-                self.proxy_flight.assign()
-            except ValueError, err:
-                self.ErrorMessageBox('Invalid flight string', err.message)
-                return
-            except NoSuchAirportError, err:
-                result = AddAirportDialog(err.code, parent=self).ask()
-                if result == wx.ID_CANCEL:
-                    return
-            else:
-                self.GetParent().Refresh()
-                self.Destroy()
-                return
+        def commit_action():
+            self.proxy_flight.assign()
+        if try_flight(commit_action, self):
+            self.GetParent().Refresh()
+            self.Destroy()
 
     def CancelButton(self, _evt):
         self.Destroy()
@@ -408,3 +399,18 @@ class EditDialog(wx.Dialog):
         else:
             self.arrives_combo.SetBackgroundColour(wx.WHITE)
         self.arrives_combo.Refresh()
+
+
+def try_flight(action, ui_context):
+    while True:
+        try:
+            action()
+        except ValueError, err:
+            ui_context.ErrorMessageBox('Invalid flight string', err.message)
+            return False
+        except NoSuchAirportError, err:
+            result = AddAirportDialog(err.code, parent=ui_context).ask()
+            if result == wx.ID_CANCEL:
+                return False
+        else:
+            return True
